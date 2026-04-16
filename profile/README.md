@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://en.cppreference.com/w/cpp/23)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 
 *Fast and flexible thermal mathematical modeling focused on spacecraft thermal analysis*
 
@@ -55,14 +55,14 @@ The high-performance C++ core library containing:
 
 ### [pycanha-core-python](https://github.com/pycanha-project/pycanha-core-python)
 Python bindings for pycanha-core using modern binding techniques:
-- Direct C++ integration via pybind11
+- Direct C++ integration via nanobind
 - Type-safe Python interfaces
 - Efficient data exchange between Python and C++
 
 [![Build and publish wheels](https://github.com/pycanha-project/pycanha-core-python/actions/workflows/build-publish-wheels.yml/badge.svg)](https://github.com/pycanha-project/pycanha-core-python/actions/workflows/build-publish-wheels.yml)
 [![Documentation Status](https://readthedocs.org/projects/pycanha-core-python/badge/?version=latest)](https://pycanha-core-python.readthedocs.io/latest/?badge=latest)
 
-### [pycanha](https://github.com/pycanha-project/pycanha) *(Coming Soon)*
+### [pycanha](https://github.com/pycanha-project/pycanha)
 Pure Python layer extending pycanha-core-python with:
 - High-level thermal modeling abstractions
 - I/O utilities and file format support
@@ -119,7 +119,7 @@ for node in tmm.nodes:
 - **Modern C++23** implementation for maximum performance
 - **Eigen** library for efficient sparse matrix operations
 - **Intel MKL** integration (optional) for optimized linear algebra
-- **pybind11** for seamless Python-C++ integration
+- **nanobind** for seamless Python-C++ integration
 - **CMake** build system with Conan package management
 - Comprehensive **unit testing** with high code coverage
 - **CI/CD** pipelines ensuring code quality
