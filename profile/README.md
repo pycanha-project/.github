@@ -1,163 +1,159 @@
-# 🔥 Pycanha Project
+# Pycanha Project
 
-<div align="center">
+**pycanha** is an open-source thermal analysis tool for spacecraft. It models a system as a
+lumped-parameter thermal network made of nodes with capacities and heat loads, joined by
+conductive and radiative couplings. It also builds that network from geometry, with a
+geometrical model, a conduction builder and GPU ray tracing for view factors and radiative
+exchange factors.
 
-**High-Performance Thermal Analysis Tool**
+All the numerical work runs in a C++23 core and is driven from Python. Sparse linear
+algebra uses Eigen and Intel MKL, and radiation is computed on the GPU, so large models can
+be built and solved from a Python script. The project follows current standards and
+tracks the latest releases of its dependencies.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://en.cppreference.com/w/cpp/23)
-[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+The method is not specific to spacecraft, so pycanha works for any problem that a lumped
+thermal network describes well.
 
-*Fast and flexible thermal mathematical modeling focused on spacecraft thermal analysis*
+**Status:** pre-1.0, currently at version 0.22. The features below work and are tested,
+but the API still changes between minor versions.
 
-</div>
+## What it does
 
----
+**Thermal network**
+- Nodes with temperature, capacity and heat loads, plus boundary nodes at a fixed
+  temperature.
+- Conductive and radiative couplings.
+- Bulk construction from NumPy arrays, passed to C++ in a single call.
+- Parameters and formulas on node and coupling attributes.
+- Python callbacks during a solve, for control logic such as thermostats and heater
+  switching.
 
-## 🌟 Overview
+**Solvers**
+- Steady state, with sparse direct solvers from Eigen or Intel MKL (PARDISO).
+- Transient, using Crank–Nicolson with linearised radiation.
+- A transient variant that also outputs Jacobians with respect to model parameters, for
+  sensitivity analysis.
 
-**Pycanha** is a modern, high-performance thermal analysis toolkit designed mainly for engineers and researchers working on the spacecraft thermal control field. 
-Built with a powerful C++ core and intuitive Python interfaces, Pycanha enables efficient simulation of thermal systems with both conductive and radiative heat transfer.
+**Geometry**
+- STEP-TAS primitives: Triangle, rectangle, quadrilateral, disc, cylinder, cone, sphere and paraboloid; with transformations and an assembly tree.
+- Cutting engine.
+- Building the conductive network (nodes, capacities, in-plane and through-thickness
+  conductances) from each primitive's own geometry.
 
-Although is Pycanha is intended for spacecraft thermal analysis, in the end is a thermal lumped network analysis tool so it can be used in a wide range of thermal problems where this technique is suitable.
+**Radiation**
+- Monte Carlo ray tracing for view factors, multi-reflection radiative exchange factors and
+  absorbed solar flux.
+- Hardware ray tracing through Vulkan on Windows and Linux, and through Metal on Apple M3
+  or newer. No CUDA or specific GPU vendor is required.
 
-> **⚠️ Development Status**: Pycanha is currently in active pre-release development (not even beta phase yet). The core functionality is operational, but the API will change and some of the capabilities listed below are still being implemented.
+**Interoperability**
+- Reads and writes STEP-TAS and ESATAN-TMS models.
 
-### Key Features
+**Visualisation**
+- An interactive 3D viewer (Qt and PyVista) with a geometry tree, picking, colouring by any
+  property and playback of results over time.
 
-- ⚡ **High-Performance Computing**: Optimized core with modern C++ features
-- 🔬 **Advanced Solvers**: Multiple solvers with optional with optional support for Intel MKL for maximum perfomance
-  - Steady-state
-  - Transient
-  - Jacobian propagation methods for sensitivity analysis
-- 🌡️ **Comprehensive Thermal Modeling**: Conductive and radiative heat transfer based on lumped models
-- 🐍 **Python-First Interface**: Easy-to-use Python API while maintaining C++ performance
-- 🔧 **Flexible Architecture**: Extensible design with Python
-- 📊 **Industry Compatibility**: Support for ESATAN files and STEP-TAS models
-- 🚀 **GPU Ray-Tracing Capabilities**: GPU-accelerated calculation of View Factors (VF) and Radiative Exchange Factors (REFs) *(coming soon)*
+## Coming soon
 
----
+- Parametric geometry
+- Orbits, attitude and pointing
+- Planetary infrared and albedo fluxes
+- Improve compatibility with standar tools
 
-## 📦 Project Structure
+## Planned
 
-The Pycanha project consists of three interconnected repositories:
+- Mission module with load-case management
+- Conductive interfaces and contact conductances between geometry items
+- Solid geometries
+- A standalone GUI
 
-### [pycanha-core](https://github.com/pycanha-project/pycanha-core)
-The high-performance C++ core library containing:
-- Thermal network data structures
-- Sparse matrix operations
-- Advanced numerical solvers
-- Core algorithms for thermal analysis
-
-[![CI](https://github.com/pycanha-project/pycanha-core/actions/workflows/ci.yml/badge.svg)](https://github.com/pycanha-project/pycanha-core/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/pycanha-project/pycanha-core/graph/badge.svg?token=XZRHKH2G8I)](https://codecov.io/gh/pycanha-project/pycanha-core)
-[![docs](https://img.shields.io/badge/doc-GitHub%20Pages-blue)](https://pycanha-project.github.io/pycanha-core/)
-
-### [pycanha-core-python](https://github.com/pycanha-project/pycanha-core-python)
-Python bindings for pycanha-core using modern binding techniques:
-- Direct C++ integration via nanobind
-- Type-safe Python interfaces
-- Efficient data exchange between Python and C++
-
-[![Build and publish wheels](https://github.com/pycanha-project/pycanha-core-python/actions/workflows/build-publish-wheels.yml/badge.svg)](https://github.com/pycanha-project/pycanha-core-python/actions/workflows/build-publish-wheels.yml)
-[![Documentation Status](https://readthedocs.org/projects/pycanha-core-python/badge/?version=latest)](https://pycanha-core-python.readthedocs.io/latest/?badge=latest)
-
-### [pycanha](https://github.com/pycanha-project/pycanha)
-Pure Python layer extending pycanha-core-python with:
-- High-level thermal modeling abstractions
-- I/O utilities and file format support
-- Visualization and post-processing tools
-- User-friendly workflows for common analysis tasks
-
----
-
-## 🚀 Quick Start - Steaty-state analysis
+## Example
 
 ```python
-import pycanha
+import pycanha as pc
+import pycanha.tmm as pm
 
-# Create a thermal mathematical model
-tmm = pycanha.ThermalMathematicalModel("MyModel")
+tm = pc.ThermalModel("QuickStart")
+tmm = tm.tmm
 
-# Define thermal nodes
-tmm.add_node(pycanha.Node(1, nodetype="B"))  # Boundary node
-tmm.add_node(pycanha.Node(2, nodetype="D"))  # Diffusive node
+node1 = pm.Node(1)
+node1.C = 100.0      # capacity [J/K]
+node1.qi = 10.0      # internal heat load [W]
 
-# Add conductive couplings between nodes
-tmm.conductive_couplings.add_coupling(1, 2, coupling_value=1.0)
+node2 = pm.Node(2)
+node2.type = pm.NodeType.BOUNDARY
+node2.T = 300.0      # [K]
 
-# Set boundary temperature
-tmm.nodes.set_T(1, 300.0)
+tmm.add_node(node1)
+tmm.add_node(node2)
+tmm.conductive_couplings.add_coupling(1, 2, 0.5)   # conductance [W/K]
 
-# Set dissipation
-tmm.nodes.set_qi(2, 10)
-
-# Solve steady-state
-solver = tmm.steady_state_solvers.sslu
+solver = tm.solvers.sslu
 solver.initialize()
 solver.solve()
 
-# Access results
-for node in tmm.nodes:
-    print(f"Node {node.node_number}: {node.T} K")
+print(tmm.nodes.get_T(1))   # 320.0
 ```
 
----
+More examples, including geometry, cutting, ESATAN-TMS import and parametric analysis, are
+in the [examples gallery](https://pycanha.readthedocs.io/en/latest/auto_examples/index.html).
 
-## 🎯 Use Cases
+## Installation
 
-- **Spacecraft Thermal Design**
-- **VF and REFs calculation**
-- **Parametric analysis**
-- **Post-processing**
-- **Research & Education**
+```bash
+pip install pycanha
+```
 
----
+pycanha requires Python 3.13 or later, on Windows, Linux or macOS (Apple Silicon). The
+Windows and Linux wheels include Intel MKL, and the macOS wheels do not.
 
-## 🛠️ Technical Highlights
+## Repositories
 
-- **Modern C++23** implementation for maximum performance
-- **Eigen** library for efficient sparse matrix operations
-- **Intel MKL** integration (optional) for optimized linear algebra
-- **nanobind** for seamless Python-C++ integration
-- **CMake** build system with Conan package management
-- Comprehensive **unit testing** with high code coverage
-- **CI/CD** pipelines ensuring code quality
-- Extensive **documentation** with API references and examples
+The project has three repositories. Most users only need `pycanha`.
 
----
+### [pycanha](https://github.com/pycanha-project/pycanha)
 
-## 📖 Documentation
+[![PyPI](https://img.shields.io/pypi/v/pycanha)](https://pypi.org/project/pycanha/)
+[![Tests](https://github.com/pycanha-project/pycanha/actions/workflows/ci-test.yml/badge.svg)](https://github.com/pycanha-project/pycanha/actions/workflows/ci-test.yml)
+[![Quality](https://github.com/pycanha-project/pycanha/actions/workflows/ci-quality.yml/badge.svg)](https://github.com/pycanha-project/pycanha/actions/workflows/ci-quality.yml)
+[![docs](https://readthedocs.org/projects/pycanha/badge/?version=latest)](https://pycanha.readthedocs.io/en/latest/)
 
-- **pycanha-core**: [GitHub Pages](https://pycanha-project.github.io/pycanha-core/)
-- **pycanha-core-python**: [Read the Docs](https://pycanha-core-python.readthedocs.io/)
+The Python package for users. It provides `ThermalModel`, the ESATAN-TMS and STEP-TAS
+readers and writers, the viewer and the Python-side model API. It is pure Python.
 
----
+### [pycanha-core](https://github.com/pycanha-project/pycanha-core)
 
-## 🤝 Contributing
+[![CI](https://github.com/pycanha-project/pycanha-core/actions/workflows/ci.yml/badge.svg)](https://github.com/pycanha-project/pycanha-core/actions/workflows/ci.yml)
+[![Code Checks](https://github.com/pycanha-project/pycanha-core/actions/workflows/code-checks.yml/badge.svg)](https://github.com/pycanha-project/pycanha-core/actions/workflows/code-checks.yml)
+[![codecov](https://codecov.io/gh/pycanha-project/pycanha-core/graph/badge.svg?token=XZRHKH2G8I)](https://codecov.io/gh/pycanha-project/pycanha-core)
+[![docs](https://img.shields.io/badge/doc-GitHub%20Pages-blue)](https://pycanha-project.github.io/pycanha-core/)
 
-Pycanha is still in a development phase. After releasing the version 1.0, contributions will be welcomed!
+The C++23 library with the thermal network, the solvers, the geometry model, the conduction
+builder and the ray-tracing engine (Slang kernels compiled to SPIR-V and Metal). It uses
+Eigen, optionally Intel MKL, and Manifold, and is built with Conan and CMake. It has no
+Python dependency and can be used on its own.
 
----
+### [pycanha-core-python](https://github.com/pycanha-project/pycanha-core-python)
 
-## 📄 License
+[![PyPI](https://img.shields.io/pypi/v/pycanha-core)](https://pypi.org/project/pycanha-core/)
+[![Build and publish wheels](https://github.com/pycanha-project/pycanha-core-python/actions/workflows/build-publish-wheels.yml/badge.svg)](https://github.com/pycanha-project/pycanha-core-python/actions/workflows/build-publish-wheels.yml)
+[![Documentation Status](https://readthedocs.org/projects/pycanha-core-python/badge/?version=latest)](https://pycanha-core-python.readthedocs.io/latest/?badge=latest)
 
-All Pycanha project repositories are released under the [MIT License](LICENSE), making them free for both academic and commercial use.
+The nanobind bindings, published on PyPI as `pycanha-core` and imported as `pycanha_core`.
+They expose the C++ API one-to-one, and `pycanha` builds on them. A binding release always
+has the same `major.minor` version as the core release it wraps.
 
----
+## Documentation
 
-## 🌐 Community & Support
+- pycanha: <https://pycanha.readthedocs.io/>
+- pycanha-core (C++ API): <https://pycanha-project.github.io/pycanha-core/>
+- pycanha-core-python: <https://pycanha-core-python.readthedocs.io/>
 
-- **Issues**: Report bugs or request features in the respective repository
-- **Discussions**: Share ideas and ask questions in GitHub Discussions
-- **Email**: Contact the maintainers through the repository
+## Contributing
 
----
+Bug reports and feature requests are welcome as issues in the relevant repository. Pull
+requests will be accepted once the API is stable at 1.0.
 
+## License
 
-<div align="center">
-
-
-[Getting Started](https://github.com/pycanha-project/pycanha-core-python) • [Documentation](https://pycanha-core-python.readthedocs.io/) • [Examples](https://github.com/pycanha-project/pycanha-core-python/tree/main/examples)
-
-</div>
+MIT. See the `LICENSE` file in each repository.
